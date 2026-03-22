@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+
+<style>
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+}
+
+body{
+    font-family:"Sarabun",Tahoma,sans-serif;
+    font-size:12px;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:8px;
+}
+
+.sub-header{
+    text-align:center;
+    font-size:11px;
+    margin-bottom:8px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed; /* สำคัญมาก กันล้น */
+}
+
+th, td{
+    border:1px solid #000;
+    padding:4px;
+    font-size:11px;
+    word-wrap:break-word; /* กันข้อความยาว */
+}
+
+th{
+    background:#eaeaea;
+}
+
+.text-center{ text-align:center; }
+.text-left{ text-align:left; }
+
+.col-name{
+    width:160px;  /* fix ความกว้างชื่อ */
+}
+
+.col-doctor{
+    width:140px;
+}
+
+.col-dept{
+    width:120px;
+}
+
+.status-moved{ color:#d35400; font-weight:bold; }
+.status-cancel{ color:red; font-weight:bold; }
+.status-checkin{ color:green; }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h2>โรงพยาบาลมหาวิทยาลัยนเรศวร</h2>
+    <h3>รายงานเลื่อนนัดผู้ป่วย (OPD)</h3>
+</div>
+
+<div class="sub-header">
+    {{ meta.start_datetime[:10] }} - {{ meta.end_datetime[:10] }}
+</div>
+
+<table>
+<thead>
+<tr>
+    <th>ลำดับ</th>
+    <th>HN</th>
+    <th class="col-name">ชื่อผู้ป่วย</th> <!-- ✅ เพิ่ม -->
+    <th>โทร</th>
+    <th class="col-doctor">แพทย์</th>
+    <th class="col-dept">แผนก</th>
+    <th>ประเภท</th>
+    <th>นัดเดิม</th>
+    <th>นัดล่าสุด</th>
+    <th>เวลา</th>
+    <th>เลื่อน</th>
+    <th>สถานะ</th>
+</tr>
+</thead>
+
+<tbody>
+{% for row in content %}
+<tr>
+    <td class="text-center">{{ row.seq_no }}</td>
+    <td class="text-center">{{ row.hn }}</td>
+
+    <!-- ✅ ชื่อผู้ป่วย -->
+    <td class="text-left">
+        {{ row.patient.info.th.name or '-' }}
+    </td>
+
+    <td class="text-center">{{ row.patient.mobilePhone or '-' }}</td>
+    <td class="text-left">{{ row.doctor_name }}</td>
+    <td class="text-left">{{ row.department_name }}</td>
+    <td class="text-center">{{ row.nurse_appointment_type }}</td>
+    <td class="text-center">{{ row.original_appointment_date or '-' }}</td>
+    <td class="text-center">{{ row.latest_appointment_date }}</td>
+    <td class="text-center">{{ row.latest_appointment_time }}</td>
+    <td class="text-center">{{ row.reschedule_count }}</td>
+
+    <td class="text-center
+        {% if row.appointment_status == 'MOVED' %}
+            status-moved
+        {% elif row.appointment_status == 'CANCELLED' %}
+            status-cancel
+        {% elif row.appointment_status == 'CHECKED_IN' %}
+            status-checkin
+        {% endif %}
+    ">
+        {{ row.appointment_status }}
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</body>
+</html>

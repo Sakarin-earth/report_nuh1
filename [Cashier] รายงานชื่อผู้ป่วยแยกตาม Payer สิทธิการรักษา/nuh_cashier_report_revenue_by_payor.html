@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>{{ meta.report_name | default('รายงาน') }}</title>
+<style>
+@page { size: A4 landscape; margin: 10mm 12mm; }
+
+body {
+  font-family: "Sarabun", "Tahoma", sans-serif;
+  font-size: 11px;
+  margin: 14px;
+  color: #000;
+}
+
+h2, h3 { text-align: center; margin: 0; }
+h2 { font-size: 16px; font-weight: bold; }
+h3 { font-size: 13px; font-weight: normal; }
+
+.line {
+  border-bottom: 2px solid #004b85;
+  margin: 8px 0 10px 0;
+}
+
+table.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #999;
+  padding: 4px 6px;
+  vertical-align: top;
+  word-wrap: break-word;
+}
+
+.report-table thead th {
+  background: #0b4f7c;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  font-size: 10px;
+}
+
+.report-table thead th.col-amount {
+  text-align: right;
+  padding-right: 8px;
+}
+
+/* คู่คอลัมน์ รายละเอียด | จำนวนเงิน: ไม่มีเส้าแนวตั้งคั่น ทุกแถวรวม thead */
+.report-table thead th.col-detail,
+.report-table tbody td.col-detail {
+  border-right: none;
+}
+.report-table thead th.col-amount,
+.report-table tbody td.col-amount {
+  border-left: none;
+}
+
+.col-detail { width: 42%; }
+.col-amount {
+  width: 11%;
+  text-align: right;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+
+.payer {
+  font-weight: bold;
+  background: #f5f9fc;
+  color: #004b85;
+}
+
+.center { text-align: center; }
+.right { text-align: right; }
+
+.detail {
+  padding-left: 12px;
+  font-size: 10px;
+}
+
+.footer {
+  margin-top: 12px;
+  font-size: 10px;
+  text-align: right;
+  color: #555;
+}
+
+tr.total-row td {
+  background: #e8e8e8;
+  font-weight: bold;
+  vertical-align: middle;
+}
+tr.total-row .total-label {
+  text-align: right;
+  padding-right: 10px;
+  border-right: none;
+}
+tr.total-row td.col-amount {
+  border-left: none;
+  border-right: none;
+}
+
+@media print { body { margin: 0; } }
+</style>
+</head>
+<body>
+
+{# หัวรายงานมาตรฐาน NUH #}
+<h2>{{ meta.hospital_name | default('โรงพยาบาลมหาวิทยาลัยนเรศวร') }}</h2>
+<h3>{{ meta.report_name | default('รายงาน') }}</h3>
+
+{% set th_months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'] %}
+
+{# ช่วงวันที่: รองรับ start_timestamp / end_timestamp (ISO) และฟิลด์เดิม #}
+{% if meta.start_date_display and meta.end_date_display %}
+<h3>ช่วงวันที่ {{ meta.start_date_display }} ถึง {{ meta.end_date_display }}</h3>
+{% elif meta.start_timestamp and meta.end_timestamp %}
+  {% set s_raw = meta.start_timestamp %}
+  {% set e_raw = meta.end_timestamp %}
+  {% set s_year_be = (s_raw[0:4] | int) + 543 %}
+  {% set s_month = s_raw[5:7] | int %}
+  {% set s_day = s_raw[8:10] | int %}
+  {% set e_year_be = (e_raw[0:4] | int) + 543 %}
+  {% set e_month = e_raw[5:7] | int %}
+  {% set e_day = e_raw[8:10] | int %}
+<h3>
+  ช่วงวันที่
+  {{ '%d' % s_day }} {{ th_months[s_month - 1] }} {{ s_year_be % 100 }}
+  ถึง
+  {{ '%d' % e_day }} {{ th_months[e_month - 1] }} {{ e_year_be % 100 }}
+</h3>
+{% elif meta.start_date and meta.end_date %}
+<h3>ช่วงวันที่ {{ meta.start_date }} ถึง {{ meta.end_date }}</h3>
+{% else %}
+<h3>
+  ช่วงวันที่ {{ meta.start_date_display | default(meta.start_date | default('')) }}
+  ถึง {{ meta.end_date_display | default(meta.end_date | default('')) }}
+</h3>
+{% endif %}
+
+<div class="line"></div>
+
+{% if content %}
+
+{# ยอดรวม: ใช้ meta / g ถ้ามี ไม่มีให้คำนวณจาก content #}
+{% set grand = namespace(value=0) %}
+{% for row in content %}
+  {% if row.details %}
+    {% for d in row.details %}
+      {% set grand.value = grand.value + (d.amount | default(0) | float) %}
+    {% endfor %}
+  {% else %}
+    {% set grand.value = grand.value + (row.amount | default(0) | float) %}
+  {% endif %}
+{% endfor %}
+
+<table class="report-table">
+<thead>
+<tr>
+  <th width="3%">ลำดับ</th>
+  <th width="14%">Payer / สิทธิ</th>
+  <th width="9%">VN</th>
+  <th width="7%">HN</th>
+  <th width="14%">ชื่อผู้ป่วย</th>
+  <th width="8%">วันที่</th>
+  <th class="col-detail">รายละเอียด</th>
+  <th class="col-amount">จำนวนเงิน</th>
+</tr>
+</thead>
+<tbody>
+
+{% for row in content %}
+
+<tr>
+<td class="center">{{ loop.index }}</td>
+
+<td class="payer">
+  {% if row.payor %}{{ row.payor }}
+  {% elif row.Payor %}{{ row.Payor }}
+  {% elif row.payer_name %}{{ row.payer_name }}
+  {% elif row.payer %}{{ row.payer }}
+  {% elif row.payerName %}{{ row.payerName }}
+  {% elif row.insurance_name %}{{ row.insurance_name }}
+  {% elif row.insurance %}{{ row.insurance }}
+  {% else %}ไม่ระบุ{% endif %}
+</td>
+
+<td class="center">{{ row.vn | default('') }}</td>
+<td class="center">{{ row.hn | default('') }}</td>
+
+<td>
+  {% if row.patient_name %}{{ row.patient_name }}
+  {% elif row.PatientName %}{{ row.PatientName }}
+  {% elif row.patientName %}{{ row.patientName }}
+  {% elif row.pname %}{{ row.pname }}
+  {% elif row.full_name %}{{ row.full_name }}
+  {% else %}-{% endif %}
+</td>
+
+<td class="center">
+  {% if row.visit_date %}{{ row.visit_date }}
+  {% elif row.visitDate %}{{ row.visitDate }}
+  {% endif %}
+</td>
+
+<td class="col-detail">
+  {% if row.category_name %}<span>{{ row.category_name }}</span><br>{% endif %}
+  {% if row.insurance_code %}รหัสสิทธิ: {{ row.insurance_code }}<br>{% endif %}
+  {% if row.claim_code %}Claim: {{ row.claim_code }}<br>{% endif %}
+</td>
+<td class="col-amount">{% if row.amount or row.amount == 0 %}{{ row.amount }}{% endif %}</td>
+</tr>
+
+{% if row.details %}
+  {% for d in row.details %}
+  <tr>
+    <td></td>
+    <td></td>
+    <td colspan="5" class="detail col-detail">
+      {% if d.name %}{{ d.name }}
+      {% elif d.display %}{{ d.display }}
+      {% elif d.description %}{{ d.description }}
+      {% else %}-{% endif %}
+    </td>
+    <td class="col-amount">{% if d.amount or d.amount == 0 %}{{ d.amount }}{% endif %}</td>
+  </tr>
+  {% endfor %}
+{% endif %}
+
+{% endfor %}
+
+<tr class="total-row">
+  <td colspan="7" class="total-label col-detail">รวม</td>
+  <td class="col-amount">
+    {% if meta.total_amount or meta.total_amount == 0 %}{{ meta.total_amount }}
+    {% elif meta.total or meta.total == 0 %}{{ meta.total }}
+    {% elif g and (g.total_amount or g.total_amount == 0) %}{{ g.total_amount }}
+    {% else %}{{ grand.value }}{% endif %}
+  </td>
+</tr>
+
+</tbody>
+</table>
+
+<p class="footer">
+  จำนวน {{ content | length }} รายการ<br>
+  วันที่พิมพ์: {{ meta.print_date | default(meta.generated_at | default('')) }}
+</p>
+
+{% else %}
+<p style="text-align:center; color:#666;">ไม่มีข้อมูล</p>
+{% endif %}
+
+</body>
+</html>

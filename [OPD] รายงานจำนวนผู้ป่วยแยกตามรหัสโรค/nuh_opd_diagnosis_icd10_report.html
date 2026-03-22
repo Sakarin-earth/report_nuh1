@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ meta.report_name }}</title>
+  <style>
+    body {
+      font-family: "Sarabun", "Tahoma", sans-serif;
+      font-size: 12.6px;
+      margin: 20px;
+    }
+    h2, h3 {
+      text-align: center;
+      margin: 0;
+    }
+    .line {
+      border-bottom: 2px solid #004b85;
+      margin: 10px 0 12px 0;
+    }
+    .summary {
+      font-weight: bold;
+      color: #004b85;
+      margin-bottom: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 6px 8px;
+    }
+    th {
+      background-color: #0b4f7c;
+      color: white;
+    }
+    td.num {
+      text-align: right;
+    }
+    td.center {
+      text-align: center;
+    }
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>{{ meta.hospital_name }}</h2>
+  <h3>{{ meta.report_name }}</h3>
+
+  <h3>
+    ตั้งแต่วันที่ {{ meta.period_start_th }}
+    ถึงวันที่ {{ meta.period_end_th }}
+  </h3>
+
+  <div class="line"></div>
+
+  <div class="summary">
+    จำนวนรายการทั้งหมด: {{ meta.total_records }} รายการ
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th width="5%" class="center">ลำดับ</th>
+        <th width="14%" class="center">รหัส ICD-10</th>
+        <th width="41%">ชื่อโรค (Diagnosis Name)</th>
+        <th width="12%" class="center">ชาย</th>
+        <th width="12%" class="center">หญิง</th>
+        <th width="16%" class="center">รวมทั้งหมด</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for row in content %}
+        <tr>
+          <td class="center">{{ loop.index }}</td>
+          <td class="center"><b>{{ row.dx_code }}</b></td>
+          <td>{{ row.dx_name }}</td>
+          <td class="num">{{ row.male }}</td>
+          <td class="num">{{ row.female }}</td>
+          <td class="num">{{ row.cnt }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+
+    <tfoot>
+      <tr>
+        <th colspan="3" style="background:#0b4f7c;color:#fff;">รวมทั้งหมด</th>
+        <th class="num" style="background:#0b4f7c;color:#fff;">{{ meta.sum_male }}</th>
+        <th class="num" style="background:#0b4f7c;color:#fff;">{{ meta.sum_female }}</th>
+        <th class="num" style="background:#0b4f7c;color:#fff;">{{ meta.sum_cnt }}</th>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="footer">
+    วันที่พิมพ์: {{ meta.print_date }}
+  </div>
+
+</body>
+</html>

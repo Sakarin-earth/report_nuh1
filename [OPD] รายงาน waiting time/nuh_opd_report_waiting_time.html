@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+}
+
+body {
+    font-family: "Sarabun", "Tahoma", sans-serif;
+    font-size: 12px;
+    color: #000;
+    margin: 10px;
+}
+
+/* HEADER */
+.waiting-header {
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.waiting-hospital {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.waiting-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 2px 0;
+}
+
+.waiting-meta {
+    font-size: 12px;
+    margin: 0;
+}
+
+.waiting-line {
+    border-top: 2px solid #000;
+    margin: 6px 0 10px 0;
+}
+
+/* TABLE */
+table.waiting-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 2px solid #000;
+}
+
+.waiting-grid thead th {
+    border: 1px solid #000;
+    padding: 6px 4px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 12px;
+    background: #fff;
+}
+
+.waiting-grid td {
+    border: 1px solid #000;
+    padding: 5px 4px;
+    font-size: 12px;
+    vertical-align: middle;
+    line-height: 1.2;
+    height: 28px;
+}
+
+.cell-center { text-align: center; }
+.cell-left { text-align: left; }
+
+/* GROUP HEADER */
+tr.doctor-group-header td {
+    font-weight: bold;
+    padding: 6px;
+    border-top: 2px solid #000;
+    border-bottom: 1px solid #000;
+    background: #fff;
+}
+
+/* SUBTOTAL */
+tr.doctor-group-subtotal td {
+    font-weight: bold;
+    padding: 4px 6px;
+    border: 1px solid #000;
+}
+
+/* GRAND TOTAL */
+tr.waiting-grand-total td {
+    font-weight: bold;
+    padding: 6px;
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+}
+
+/* FIX PRINT */
+@media print {
+    body { margin: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="waiting-header">
+    <div class="waiting-hospital">โรงพยาบาลมหาวิทยาลัยนเรศวร</div>
+    <div class="waiting-title">{{ meta.report_name }}</div>
+    <div class="waiting-meta">
+        ช่วงวันที่
+        {{ meta.start_date_display | default(meta.start_date | default('')) }}
+        ถึง
+        {{ meta.end_date_display | default(meta.end_date | default('')) }}
+        <span style="font-size:10px;color:#555;">(ตามเวลาไทย Asia/Bangkok)</span>
+    </div>
+</div>
+
+<hr class="waiting-line">
+
+<table class="waiting-grid">
+<thead>
+<tr>
+    <th width="12%">VN/AN</th>
+    <th width="20%">ชื่อ - นามสกุล</th>
+    <th width="14%">Time - in</th>
+    <th width="12%">Time - out</th>
+    <th width="12%">Waiting time</th>
+    <th width="14%">สิทธิการรักษา</th>
+    <th width="8%">ICD-10</th>
+    <th width="8%">ICD-9-CM</th>
+</tr>
+</thead>
+
+<tbody>
+    {% if content %}
+
+        {# namespace: กัน Jinja2 block scope — ไม่งั้น current_doctor / count ไม่อัปเดต → หัวแพทย์ซ้ำทุกแถว + รวม 0 ราย #}
+        {% set g = namespace(doc='', group_n=0) %}
+
+        {% for row in content %}
+
+            {% set raw_doc = row.DoctorName or row.doctorName or row.doctor_name %}
+            {% set dn = raw_doc | default('ไม่ระบุแพทย์', true) %}
+
+            {% if g.doc != dn %}
+                {% if not loop.first %}
+                <tr class="doctor-group-subtotal">
+                    <td colspan="8">รวม {{ g.group_n }} ราย</td>
+                </tr>
+                {% endif %}
+
+                <tr class="doctor-group-header">
+                    <td colspan="8">แพทย์: {{ dn }}</td>
+                </tr>
+
+                {% set g.doc = dn %}
+                {% set g.group_n = 0 %}
+            {% endif %}
+
+            <tr>
+                <td class="cell-center">
+                    {{ row.vn or '' }}{% if row.an %} / {{ row.an }}{% endif %}
+                </td>
+
+                <td class="cell-left">
+                    {{ row.PatientName or row.patientName or row.patient_name or '-' }}
+                </td>
+
+                <td class="cell-center">
+                    {{ row.date or row.visit_date or '' }}<br>
+                    {{ row.time_in or '' }}
+                </td>
+
+                <td class="cell-center">
+                    {{ row.time_out or '' }}
+                </td>
+
+                <td class="cell-center">
+                    {{ row.waiting_time_text or row.waiting_time or '-' }}
+                </td>
+
+                <td class="cell-center">
+                    {{ row.insurance or row.insurance_name or '-' }}
+                </td>
+
+                <td class="cell-left">
+                    {{ row.icd10 or '' }}
+                </td>
+
+                <td class="cell-left">
+                    {{ row.icd9cm or '' }}
+                </td>
+            </tr>
+
+            {% set g.group_n = g.group_n + 1 %}
+
+            {% if loop.last %}
+            <tr class="doctor-group-subtotal">
+                <td colspan="8">รวม {{ g.group_n }} ราย</td>
+            </tr>
+            {% endif %}
+
+        {% endfor %}
+
+        <tr class="waiting-grand-total">
+            <td colspan="8">
+                รวมทั้งสิ้น {{ meta.total_patient_rows | default(content | length) }} ราย
+            </td>
+        </tr>
+
+    {% else %}
+        <tr>
+            <td colspan="8" class="cell-center">ไม่พบข้อมูล</td>
+        </tr>
+    {% endif %}
+    </tbody>
+
+</table>
+
+</body>
+</html>
