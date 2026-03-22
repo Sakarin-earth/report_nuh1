@@ -168,7 +168,11 @@ tr.waiting-grand-total td {
                 </td>
 
                 <td class="cell-left">
-                    {{ row.PatientName or row.patientName or row.patient_name or '-' }}
+                    {{ (row.patient.info.th.name
+                        if row.patient is defined
+                           and row.patient.info is defined
+                           and row.patient.info.th is defined
+                       else row.patient_name) or "" }}
                 </td>
 
                 <td class="cell-center">

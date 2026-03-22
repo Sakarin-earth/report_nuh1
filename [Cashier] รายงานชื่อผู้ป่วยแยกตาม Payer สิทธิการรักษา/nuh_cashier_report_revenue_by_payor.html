@@ -192,12 +192,11 @@ tr.total-row td.col-amount {
 <td class="center">{{ row.hn | default('') }}</td>
 
 <td>
-  {% if row.patient_name %}{{ row.patient_name }}
-  {% elif row.PatientName %}{{ row.PatientName }}
-  {% elif row.patientName %}{{ row.patientName }}
-  {% elif row.pname %}{{ row.pname }}
-  {% elif row.full_name %}{{ row.full_name }}
-  {% else %}-{% endif %}
+  {{ (row.patient.info.th.name
+    if row.patient is defined
+       and row.patient.info is defined
+       and row.patient.info.th is defined
+   else row.patient_name) or "" }}
 </td>
 
 <td class="center">
